@@ -1,14 +1,14 @@
-import typing
+import typing as ty
 
 from aiogram.dispatcher.filters import BoundFilter
 
-from tgbot.config import Config
+from app.config import Config
 
 
 class AdminFilter(BoundFilter):
     key = 'is_admin'
 
-    def __init__(self, is_admin: typing.Optional[bool] = None):
+    def __init__(self, is_admin: ty.Optional[bool] = None):
         self.is_admin = is_admin
 
     async def check(self, obj):
@@ -16,4 +16,3 @@ class AdminFilter(BoundFilter):
             return False
         config: Config = obj.bot.get('config')
         return (obj.from_user.id in config.tg_bot.admin_ids) == self.is_admin
-
