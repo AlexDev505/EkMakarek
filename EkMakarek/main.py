@@ -40,7 +40,7 @@ async def on_startup(_):
 
 
 def main():
-    config = load_config(".env")
+    config = load_config()
     init_logger()
 
     logger.debug("Starting bot")

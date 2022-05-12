@@ -57,13 +57,15 @@ def init_logger() -> None:
         level=0,
     )
 
-    logger.add(
-        os.environ["LOG_FILE"],
-        colorize=False,
-        format=formatter,
-        filter=level_handler,
-        level=6,  # Больше, чем TRACE
-    )
+    if os.environ.get("IS_LOCAL_PC"):
+        # Бот запущен на локальном пк
+        logger.add(
+            os.environ["LOG_FILE"],
+            colorize=False,
+            format=formatter,
+            filter=level_handler,
+            level=6,  # Больше, чем TRACE
+        )
 
     logger.level("DEBUG", color="<lk>")
     logger.level("TRACE", color="<lk>")

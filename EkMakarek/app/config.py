@@ -1,7 +1,5 @@
-from dataclasses import dataclass
-
 import os
-from environs import Env
+from dataclasses import dataclass
 
 
 @dataclass
@@ -35,20 +33,15 @@ class Config:
     misc: Misc
 
 
-def load_config(path: str = None):
-    env = Env()
-    env.read_env(path)
-
+def load_config() -> Config:
     return Config(
         tg_bot=TgBot(
-            token=env.str("BOT_TOKEN"),
-            admin_ids=list(map(int, env.list("ADMINS"))),
+            token=os.environ["BOT_TOKEN"],
+            admin_ids=list(map(int, os.environ["ADMINS"].split(","))),
         ),
         logger=Logger(
-            log_file=env.str("LOG_FILE"),
-            loging_level=env.str("LOGGING_LEVEL")
+            log_file=os.environ.get("LOG_FILE", "No file logging"),
+            loging_level=os.environ.get("LOGGING_LEVEL", "DEBUG"),
         ),
-        misc=Misc(
-            version=env.str("VERSION")
-        )
+        misc=Misc(version=os.environ.get("VERSION", "No info")),
     )
