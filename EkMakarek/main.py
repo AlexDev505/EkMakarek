@@ -59,8 +59,7 @@ def main():
     executor.start_polling(dispatcher=dp, on_startup=on_startup)
 
 
-if __name__ == "__main__":
-    try:
-        main()
-    except Exception as err:
-        logger.exception(err)
+try:
+    main()
+except Exception as err:
+    logger.exception(err)
