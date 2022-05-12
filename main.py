@@ -14,6 +14,7 @@ from app.filters.admin import AdminFilter
 # === HANDLERS ===
 from app.handlers.base_commands import register_user
 from app.handlers.encrypt import register_encrypt
+from app.handlers.decrypt import register_decrypt
 
 # === MISC ===
 from app.misc.logger import init_logger, logger
@@ -31,6 +32,7 @@ def register_all_filters(dp):
 def register_all_handlers(dp):
     register_user(dp)
     register_encrypt(dp)
+    register_decrypt(dp)
 
 
 async def on_startup(_):
