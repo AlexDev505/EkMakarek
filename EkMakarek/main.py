@@ -62,4 +62,5 @@ def main():
 try:
     main()
 except Exception as err:
+    raise err
     logger.exception(err)
