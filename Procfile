@@ -1,1 +1,1 @@
-worker: python EkMakarek/main.py
+worker: python EkMakarek\main.py
