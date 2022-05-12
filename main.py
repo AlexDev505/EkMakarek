@@ -4,6 +4,10 @@ from aiogram.utils import executor
 
 from app.config import load_config
 
+# === MIDDLEWARES ===
+from app.middlewares.throttling import ThrottlingMiddleware
+from app.middlewares.logging import LoggingMiddleware
+
 # === FILTERS ===
 from app.filters.admin import AdminFilter
 
@@ -13,6 +17,11 @@ from app.handlers.encrypt import register_encrypt
 
 # === MISC ===
 from app.misc.logger import init_logger, logger
+
+
+def register_all_middlewares(dp):
+    dp.setup_middleware(LoggingMiddleware())
+    dp.setup_middleware(ThrottlingMiddleware())
 
 
 def register_all_filters(dp):
@@ -40,6 +49,7 @@ def main():
 
     bot["config"] = config
 
+    register_all_middlewares(dp)
     register_all_filters(dp)
     register_all_handlers(dp)
 

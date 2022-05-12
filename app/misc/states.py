@@ -7,6 +7,6 @@ class Encrypt(StatesGroup):
     waiting_for_img = State()
 
 
-class Decode(StatesGroup):
+class Decrypt(StatesGroup):
     waiting_for_key = State()
     waiting_for_img = State()

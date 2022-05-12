@@ -1,10 +1,12 @@
 from aiogram import Dispatcher
-from aiogram.types import Message, ReplyKeyboardRemove
 from aiogram.dispatcher import FSMContext
+from aiogram.types import Message
 
 from app.keyboards.reply import start_keyboard, commands_keyboard
+from app.middlewares.throttling import rate_limit
 
 
+@rate_limit(2, "start")
 async def start(message: Message):
     await message.answer_sticker(open("stickers/hello.webp", "rb"))
     await message.answer(
@@ -13,6 +15,7 @@ async def start(message: Message):
     )
 
 
+@rate_limit(5, "help")
 async def help_command(message: Message):
     await message.answer(
         "Я могу прятать и находить текст в картинке. "
@@ -21,11 +24,12 @@ async def help_command(message: Message):
         "Доступные команды:\n"
         "/help - вывод этого сообщения\n"
         "/encrypt - зашифровать текст в картинке\n"
-        "/decode - расшифровать текст\n"
+        "/decrypt - расшифровать текст\n"
         "/cancel - отменить текущую операцию\n"
     )
 
 
+@rate_limit(2, "cancel")
 async def cancel(message: Message, state: FSMContext):
     await state.finish()
     await message.answer("Действие отменено", reply_markup=commands_keyboard())

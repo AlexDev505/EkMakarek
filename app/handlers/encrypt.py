@@ -1,22 +1,30 @@
-from io import BytesIO
-
 import asyncio
 import concurrent.futures
+import functools
+from io import BytesIO
+
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
+from aiogram.dispatcher.handler import CancelHandler
 from aiogram.types import Message, ContentType, ParseMode
-import functools
 from loguru import logger
 
 from app.keyboards.reply import cancel_keyboard, commands_keyboard
 from app.misc.crypto_img import encrypt
 from app.misc.states import Encrypt
+from app.middlewares.throttling import rate_limit
 
 
+@rate_limit(5, "encrypt")
 async def encrypt_start(message: Message, state: FSMContext):
+    """
+    Обработчик команды /encrypt
+    Просит пользователя, написать текст и переходит к следующему шагу (get_text)
+    """
     if await state.get_state() is not None:  # Работает другая команда
         await message.reply("Воспользуйтесь командой /cancel и повторите попытку")
         return
+
     await message.answer(
         "Напишите текст, который хотите спрятать.\n"
         "_Внимание:_ Используйте только "
@@ -24,10 +32,14 @@ async def encrypt_start(message: Message, state: FSMContext):
         reply_markup=cancel_keyboard(),
         parse_mode=ParseMode.MARKDOWN,
     )
-    await Encrypt.waiting_for_text.set()
+    await Encrypt.waiting_for_text.set()  # Начинаем группу команд
 
 
 async def get_text(message: Message, state: FSMContext):
+    """
+    Получение текста для шифрования.
+    Переход к следующему шагу (get_key)
+    """
     await state.update_data(text=message.text)  # Сохраняем текст
     # Переходим к следующему шагу
     await Encrypt.next()
@@ -37,13 +49,28 @@ async def get_text(message: Message, state: FSMContext):
 
 
 async def get_key(message: Message, state: FSMContext):
+    """
+    Получение ключа шифрования.
+    Переход к следующему шагу (encrypt_finish)
+    """
     await state.update_data(key=message.text)  # Сохраняем ключ
     # Переходим к следующему шагу
     await Encrypt.next()
-    await message.answer("Отправьте картинку(-и)")
+    await message.answer(
+        "Отправьте картинку(-и) (Не более 10)\n"
+        "_Внимание:_ Если у картинки нет фона, он станет черным.",
+        parse_mode=ParseMode.MARKDOWN,
+    )
 
 
-async def encrypt_finish(message: Message, state: FSMContext):
+# === ENCRYPT_FINISH ===
+
+
+async def validate_message_media(message: Message, state: FSMContext) -> True:
+    """
+    Проверяет соответствие media_group_id.
+    :raises: CancelHandler
+    """
     # Получаем сохраненные данные статуса (текст, ключ и др.)
     data = await state.get_data()
 
@@ -55,58 +82,113 @@ async def encrypt_finish(message: Message, state: FSMContext):
         if current_media_group_id is None:
             # Первое вложение из группы
             await state.update_data(
-                media_group_id=message.media_group_id, media_group_files_count=1
+                media_group_id=message.media_group_id,
+                media_group_files_count=1,
+                files={message.message_id: 1},
+                processed_files=set(),
             )
             logger.trace("start of media group")
         else:
             # Группа уже инициализирована
             if current_media_group_id != message.media_group_id:
                 # Вложение из другого сообщения
-                return
+                raise CancelHandler()
             else:
                 # Вложение из текущей группы
                 logger.trace(f"new file. {data['media_group_files_count'] + 1=}")
+                files = data["files"]
+                files[message.message_id] = data["media_group_files_count"] + 1
                 await state.update_data(
-                    media_group_files_count=data["media_group_files_count"] + 1
+                    media_group_files_count=data["media_group_files_count"] + 1,
+                    files=files,
                 )  # Увеличиваем счетчик файлов
 
+    return True
+
+
+async def get_image(message: Message) -> BytesIO:
+    """
+    Получает и скачивает картинку.
+    :return: Картинка.
+    :raises: CancelHandler
+    """
     image = BytesIO()
     try:
-        if message.document:
+        if message.document:  # Картинка без сжатия
             # Если получена не картинка, возникает AttributeError
-            await message.document.thumb.download(destination_file=image)
-        elif message.photo:
+            file = await message.bot.get_file(message.document.file_id)
+            await message.bot.download_file(file.file_path, destination=image)
+        elif message.photo:  # Сжатая картинка
             await message.photo[-1].download(destination_file=image)
-        else:
-            # Получено что-то другое
+        else:  # Получено что-то другое
             raise RuntimeError
     except (AttributeError, RuntimeError):
         await message.reply(
             "Отправьте картинку(-и).\nДля отмены операции используйте /cancel"
         )
-        return
+        raise CancelHandler()
+
+    return image
+
+
+async def encrypt_image(message: Message, state: FSMContext, image: BytesIO) -> BytesIO:
+    """
+    Шифрует текст в картинку.
+    :param message:
+    :param state:
+    :param image: Картинка.
+    :return: Обработанная картинка.
+    :raises: RuntimeError
+    """
+    data = await state.get_data()  # Обновляем локальные данные
+
+    # Шифруем текст в картинку.
+    # Запускаем блокирующую функцию encrypt в другом потоке.
+    # Если просто так запустим encrypt, то бот зависнет.
+    loop = asyncio.get_running_loop()  # Текущий цикл
+    with concurrent.futures.ThreadPoolExecutor() as pool:
+        logger.trace(
+            "start encrypt {}".format(
+                data["files"][message.message_id] if message.media_group_id else ""
+            )
+        )
+        crypto_image = await loop.run_in_executor(
+            pool,  # Новый поток
+            functools.partial(
+                encrypt, text=data["text"], key=data["key"], image=image
+            ),  # Создаем callable объект с заготовленными параметрами
+        )
+
+    logger.trace(
+        "finish encrypt {}".format(
+            data["files"][message.message_id] if message.media_group_id else ""
+        )
+    )
+
+    # Сохраняем картинку в BytesIO
+    crypto_image_bio = BytesIO()
+    crypto_image_bio.name = "crypto_image.png"
+    crypto_image.save(crypto_image_bio, "PNG")
+    crypto_image_bio.seek(0)
+
+    return crypto_image_bio
+
+
+@rate_limit(0, "get_image")  # Отключаем контроль флуда
+async def encrypt_finish(message: Message, state: FSMContext):
+    """
+    Завершающая команда.
+    Получение, шифрование и отправка обработанной картинки.
+    """
+    await validate_message_media(message, state)
+    image = await get_image(message)
+    msg_queue = await message.answer("Добавлено в очередь.")
 
     data = await state.get_data()  # Обновляем локальные данные
     logger.trace(f"{data=}")
-    msg_queue = await message.answer("Добавлено в очередь.")
 
     try:
-        # Шифруем текст в картинку.
-        # Запускаем блокирующую функцию encrypt в другом потоке.
-        # Если просто так запустим encrypt, то бот зависнет.
-        loop = asyncio.get_running_loop()  # Текущий цикл
-        with concurrent.futures.ThreadPoolExecutor() as pool:
-            logger.trace(
-                "start encrypt {}".format(
-                    data["media_group_files_count"] if message.media_group_id else ""
-                )
-            )
-            crypto_image = await loop.run_in_executor(
-                pool,  # Новый поток
-                functools.partial(
-                    encrypt, text=data["text"], key=data["key"], image=image
-                ),  # Создаем callable объект с заготовленными параметрами
-            )
+        crypto_image_bio = await encrypt_image(message, state, image)
     except RuntimeError as err:  # Ошибки при шифровании
         await msg_queue.delete()  # Удаляем сообщение о добавлении в очередь
         await message.answer_sticker(open("stickers/error.webp", "rb"))
@@ -117,20 +199,8 @@ async def encrypt_finish(message: Message, state: FSMContext):
         return
 
     logger.trace(
-        "finish encrypt {}".format(
-            data["media_group_files_count"] if message.media_group_id else ""
-        )
-    )
-
-    # Сохраняем картинку в BytesIO
-    crypto_image_bio = BytesIO()
-    crypto_image_bio.name = "crypto_image.png"
-    crypto_image.save(crypto_image_bio, "PNG")
-    crypto_image_bio.seek(0)
-
-    logger.trace(
         "send file {}".format(
-            data["media_group_files_count"] if message.media_group_id else ""
+            data["files"][message.message_id] if message.media_group_id else ""
         )
     )
 
@@ -139,11 +209,13 @@ async def encrypt_finish(message: Message, state: FSMContext):
 
     if message.media_group_id:
         # Если обработана группа файлов.
-        # Уменьшаем счетчик
-        media_group_files_count = data["media_group_files_count"] - 1
-        await state.update_data(media_group_files_count=media_group_files_count)
-        if media_group_files_count != 0:
+        data = await state.get_data()  # Обновляем локальные данные
+        data["processed_files"].add(message.message_id)
+        logger.trace(f"{data=}")
+
+        if data["processed_files"] != set(data["files"].keys()):
             # Еще остались необработанные файлы
+            await state.update_data(processed_files=data["processed_files"])
             return
         logger.trace(f"finish media group {data['media_group_id']}")
 
@@ -151,6 +223,9 @@ async def encrypt_finish(message: Message, state: FSMContext):
     await message.answer_sticker(
         open("stickers/complete.webp", "rb"), reply_markup=commands_keyboard()
     )
+
+
+# ======================
 
 
 def register_encrypt(dp: Dispatcher):

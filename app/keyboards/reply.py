@@ -17,6 +17,6 @@ def commands_keyboard() -> ReplyKeyboardMarkup:
     markup = ReplyKeyboardMarkup(resize_keyboard=True)
     markup.add(
         KeyboardButton("/encrypt - зашифровать текст ы картинке"),
-        KeyboardButton("/decode - расшифровать текст"),
+        KeyboardButton("/decrypt - расшифровать текст"),
     )
     return markup

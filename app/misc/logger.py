@@ -65,9 +65,9 @@ def init_logger() -> None:
         level=6,  # Больше, чем TRACE
     )
 
-    logger.level("TRACE", color="<e>")  # TRACE - синий
-    logger.level("DEBUG", color="<w>")  # DEBUG - белый
-    logger.level("INFO", color="<c>")  # INFO - бирюзовый
+    logger.level("DEBUG", color="<lk>")
+    logger.level("TRACE", color="<lk>")
+    logger.level("COMMAND", no=20, color="<n>")
 
 
-level_handler = LoggingLevel('DEBUG')
+level_handler = LoggingLevel("DEBUG")
