@@ -13,6 +13,7 @@ from app.keyboards.reply import cancel_keyboard, commands_keyboard
 from app.misc.crypto_img import encrypt
 from app.misc.states import Encrypt
 from app.middlewares.throttling import rate_limit
+from app.misc.stickers import get_sticker
 
 
 @rate_limit(5, "encrypt")
@@ -191,7 +192,7 @@ async def encrypt_finish(message: Message, state: FSMContext):
         crypto_image_bio = await encrypt_image(message, state, image)
     except RuntimeError as err:  # Ошибки при шифровании
         await msg_queue.delete()  # Удаляем сообщение о добавлении в очередь
-        await message.answer_sticker(open("stickers/error.webp", "rb"))
+        await message.answer_sticker(get_sticker("error"))
         await message.answer(
             f"Возникла ошибка: {str(err)}.\n"
             f"Отправьте другую картинку или завершите командой /cancel"
@@ -221,7 +222,7 @@ async def encrypt_finish(message: Message, state: FSMContext):
 
     await state.finish()  # Завершаем команду
     await message.answer_sticker(
-        open("stickers/complete.webp", "rb"), reply_markup=commands_keyboard()
+        get_sticker("complete"), reply_markup=commands_keyboard()
     )
 
 

@@ -13,6 +13,7 @@ from app.keyboards.reply import cancel_keyboard, commands_keyboard
 from app.misc.crypto_img import decrypt
 from app.misc.states import Decrypt
 from app.middlewares.throttling import rate_limit
+from app.misc.stickers import get_sticker
 
 
 @rate_limit(5, "decrypt")
@@ -103,7 +104,7 @@ async def decrypt_finish(message: Message, state: FSMContext):
 
     await state.finish()  # Завершаем команду
     await message.answer_sticker(
-        open("stickers/complete.webp", "rb"), reply_markup=commands_keyboard()
+        get_sticker("complete"), reply_markup=commands_keyboard()
     )
 
 

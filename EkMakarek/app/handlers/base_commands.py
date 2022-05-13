@@ -4,13 +4,14 @@ from aiogram.types import Message
 
 from app.keyboards.reply import start_keyboard, commands_keyboard
 from app.middlewares.throttling import rate_limit
+from app.misc.stickers import get_sticker
 
 
 @rate_limit(2, "start")
 async def start(message: Message):
-    await message.answer_sticker(open("stickers/hello.webp", "rb"))
+    await message.answer_sticker(get_sticker("hello"))
     await message.answer(
-        "Привет! Я Ёк макарек)\n" "Вот что я могу предложить тебе сейчас:\n" "/help",
+        "Привет! Я Ёк макарек)\n Вот что я могу предложить тебе сейчас:\n" "/help",
         reply_markup=start_keyboard(),
     )
 
