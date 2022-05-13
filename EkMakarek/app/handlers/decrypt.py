@@ -99,7 +99,21 @@ async def decrypt_finish(message: Message, state: FSMContext):
 
     text = await decrypt_image(message, state, image)
 
-    await message.reply(f"Вот что я расшифровал:\n{text}")
+    if len(text) + 25 > 4096:
+        if len(text) > 4096:
+            messages = []
+            while len(text) > 4096:
+                messages.append(text[:4096])
+                text = text[4096:]
+            await message.reply("Вот что я расшифровал:")
+            for part in messages:
+                await message.answer(part)
+        else:
+            await message.reply("Вот что я расшифровал:")
+            await message.reply(text)
+    else:
+        await message.reply(f"Вот что я расшифровал:\n{text}")
+
     await msg_queue.delete()
 
     await state.finish()  # Завершаем команду
