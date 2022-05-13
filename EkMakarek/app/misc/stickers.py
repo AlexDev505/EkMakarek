@@ -7,5 +7,5 @@ def get_sticker(name: str) -> BinaryIO:
     try:
         return open(path, "rb")
     except FileNotFoundError:
-        os.chdir("ekmakarek")
+        os.chdir("EkMakarek")
         return get_sticker(name)
