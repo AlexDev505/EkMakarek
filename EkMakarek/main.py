@@ -4,17 +4,17 @@ from aiogram.utils import executor
 
 from app.config import load_config
 
-# === MIDDLEWARES ===
-from app.middlewares.throttling import ThrottlingMiddleware
-from app.middlewares.logging import LoggingMiddleware
-
 # === FILTERS ===
 from app.filters.admin import AdminFilter
 
 # === HANDLERS ===
 from app.handlers.base_commands import register_user
-from app.handlers.encrypt import register_encrypt
 from app.handlers.decrypt import register_decrypt
+from app.handlers.encrypt import register_encrypt
+
+# === MIDDLEWARES ===
+from app.middlewares.throttling import ThrottlingMiddleware
+from app.middlewares.logging import LoggingMiddleware
 
 # === MISC ===
 from app.misc.logger import init_logger, logger

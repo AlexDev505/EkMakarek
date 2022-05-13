@@ -6,13 +6,13 @@ from io import BytesIO
 from aiogram import Dispatcher
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.handler import CancelHandler
-from aiogram.types import Message, ContentType, ParseMode
+from aiogram.types import Message, ContentType
 from loguru import logger
 
 from app.keyboards.reply import cancel_keyboard, commands_keyboard
+from app.middlewares.throttling import rate_limit
 from app.misc.crypto_img import decrypt
 from app.misc.states import Decrypt
-from app.middlewares.throttling import rate_limit
 from app.misc.stickers import get_sticker
 
 
@@ -90,6 +90,10 @@ async def decrypt_image(message: Message, state: FSMContext, image: BytesIO) -> 
 
 
 async def decrypt_finish(message: Message, state: FSMContext):
+    """
+    Завершающая команда.
+    Получение картинки, расшифровка и отправка текста.
+    """
     image = await get_image(message)
     msg_queue = await message.answer("Добавлено в очередь.")
 

@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import os
 import sys
+from dataclasses import dataclass
 
 from loguru import logger
-
 
 try:  # Удаление настроек логгера по умолчанию
     logger.remove(0)

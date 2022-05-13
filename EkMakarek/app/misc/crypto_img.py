@@ -1,3 +1,12 @@
+"""
+
+Функции шифрования и дешифрования текста в картинках.
+Copyright (c) 2022 Alex Filiov <https://github.com/AlexDev-py>
+
+https://github.com/AlexDev-py/CryptoImg
+
+"""
+
 import random
 from hashlib import sha256
 from io import BytesIO

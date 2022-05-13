@@ -10,9 +10,9 @@ from aiogram.types import Message, ContentType, ParseMode
 from loguru import logger
 
 from app.keyboards.reply import cancel_keyboard, commands_keyboard
+from app.middlewares.throttling import rate_limit
 from app.misc.crypto_img import encrypt
 from app.misc.states import Encrypt
-from app.middlewares.throttling import rate_limit
 from app.misc.stickers import get_sticker
 
 
