@@ -1,5 +1,7 @@
 # EkMakarek Bot
 
+> based on: [CryptoImg](https://github.com/AlexDev-py/CryptoImg)
+
 telegram: [@EkEgoMakarekBot](https://t.me/EkEgoMakarekBot)
 
 Описание
