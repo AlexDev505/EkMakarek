@@ -10,6 +10,7 @@ from .states import states_storage
 
 bot = TeleBot(
     config.tg_bot.token,
+    threaded=False,
     state_storage=states_storage,
     use_class_middlewares=True,
     parse_mode="HTML",

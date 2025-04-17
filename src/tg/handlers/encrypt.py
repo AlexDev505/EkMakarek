@@ -50,38 +50,10 @@ def get_key(message: Message, state: StateContext):
     state.set(Encrypt.waiting_for_img)
     bot.send_message(
         message.chat.id,
-        "Send images (from 1 to 10)\n"
+        "Send image\n"
         "_Note:_ If the picture does not have a background, it will lose transparency.",
         parse_mode="markdown",
     )
-
-
-def validate_message_media(message: Message, state: StateContext) -> None:
-    if message.media_group_id:
-        with state.data() as data:
-            current_media_group_id = data.get("media_group_id")
-            media_group_files_count = data.get("media_group_files_count")
-            files = data.get("files")
-        if current_media_group_id is None:
-            # it's the first image from group
-            state.add_data(
-                media_group_id=message.media_group_id,
-                media_group_files_count=1,
-                files={message.message_id: 1},
-                processed_files=set(),
-            )
-            logger.trace("start of media group")
-        else:
-            # group already initialized
-            if current_media_group_id != message.media_group_id:
-                # attachment from other message
-                raise CancelHandler()
-            # attachment from current group
-            logger.trace(f"new file. {media_group_files_count + 1=}")
-            files[message.message_id] = media_group_files_count + 1
-            state.add_data(
-                media_group_files_count=media_group_files_count + 1, fiels=files
-            )
 
 
 def get_image(message: Message) -> BytesIO:
@@ -104,19 +76,8 @@ def encrypt_image(message: Message, state: StateContext, image: BytesIO) -> Byte
     with state.data() as data:
         text = data["text"]
         key = data["key"]
-        files = data["files"]
 
-    logger.trace(
-        "start encrypt {}".format(
-            files[message.message_id] if message.media_group_id else ""
-        )
-    )
     crypto_image = encrypt(text, key, image)
-    logger.trace(
-        "finish encrypt {}".format(
-            files[message.message_id] if message.media_group_id else ""
-        )
-    )
 
     # Save the picture in BytesIO
     crypto_image_bio = BytesIO()
@@ -131,7 +92,6 @@ def encrypt_image(message: Message, state: StateContext, image: BytesIO) -> Byte
     state=Encrypt.waiting_for_img, content_types=["photo", "text", "document"]
 )
 def encrypt_finish(message: Message, state: StateContext):
-    validate_message_media(message, state)
     image = get_image(message)
     msg_queue = bot.reply_to(message, "Added to queue")
 
@@ -147,26 +107,8 @@ def encrypt_finish(message: Message, state: StateContext):
         )
         return
 
-    with state.data() as data:
-        files = data.get("files")
-    logger.trace(
-        "send file {}".format(
-            files[message.message_id] if message.media_group_id else ""
-        )
-    )
-
     bot.send_document(message.chat.id, crypto_image_bio)
     bot.delete_message(message.chat.id, msg_queue.message_id)
-
-    if message.media_group_id:
-        with state.data() as data:
-            media_group_id = data["media_group_id"]
-            processed_files = data["processed_files"]
-            processed_files.add(message.message_id)
-            files = data["files"]
-        if processed_files != set(files.keys()):
-            return
-        logger.trace(f"finish media group {media_group_id}")
 
     state.delete()
     bot.send_sticker(
