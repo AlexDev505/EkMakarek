@@ -5,10 +5,10 @@ from loguru import logger  # noqa
 logger.info("app started")
 
 
-if __name__ == "__main__":
-    if config.base.run_in_host:
-        tg.bot.setup_webhook()
+if config.base.run_in_host:
+    tg.bot.setup_webhook()
+    if __name__ == "__main__":
         app.run(debug=True)
-    else:
-        with app.app_context():
-            tg.run_pooling()
+else:
+    with app.app_context():
+        tg.run_pooling()

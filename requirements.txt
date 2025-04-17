@@ -2,3 +2,4 @@ flask
 pyTelegramBotAPI
 loguru
 pillow
+gunicorn
