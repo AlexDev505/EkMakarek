@@ -91,20 +91,20 @@ def encrypt_finish(message: Message, state: StateContext):
             data["processing"] = False
         return
 
-    if len(text) + 25 > 4096:
+    if len(text) + 29 > 4096:
         if len(text) > 4096:
             messages = []
             while len(text) > 4096:
                 messages.append(text[:4096])
                 text = text[4096:]
-            bot.reply_to(message, "Вот что я расшифровал:")
+            bot.reply_to(message, "This is what I decrypted:")
             for part in messages:
                 bot.reply_to(message, part)
         else:
-            bot.reply_to(message, "Вот что я расшифровал:")
+            bot.reply_to(message, "This is what I decrypted:")
             bot.reply_to(message, text)
     else:
-        bot.reply_to(message, f"Вот что я расшифровал:\n{text}")
+        bot.reply_to(message, f"This is what I decrypted:\n{text}")
     bot.delete_message(message.chat.id, msg_queue.message_id)
 
     state.delete()
