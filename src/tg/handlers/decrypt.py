@@ -5,7 +5,7 @@ from io import BytesIO
 
 from loguru import logger
 
-from misc.crypto_img import encrypt, decrypt
+from misc.crypto_img import decrypt
 from misc.stickers import get_sticker
 from .. import keyboards
 from ..bot import bot
