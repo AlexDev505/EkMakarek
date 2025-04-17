@@ -6,7 +6,7 @@ logger.info("app started")
 
 
 if config.base.run_in_host:
-    tg.bot.setup_webhook()
+    tg.setup_webhook()
     if __name__ == "__main__":
         app.run(debug=True)
 else:
