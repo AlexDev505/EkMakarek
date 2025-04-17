@@ -1,4 +1,8 @@
-from aiogram.dispatcher.filters.state import State, StatesGroup
+from telebot.states import State, StatesGroup
+from telebot.storage import StateMemoryStorage
+
+
+states_storage = StateMemoryStorage()
 
 
 class Encrypt(StatesGroup):
