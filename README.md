@@ -4,16 +4,16 @@
 
 telegram: [@EkEgoMakarekBot](https://t.me/EkEgoMakarekBot)
 
-Описание
+Description
 --------
 
-Бот шифрующий текст в картинке.
+Bot encrypting text in the picture.
 
 Команды
 -------
 
-- `/start` - начало общения
-- `/help` - вывод справочной информации
-- `/encrypt` - зашифровать текст в картинке
-- `/decrypt` - расшифровать текст
-- `/cancel` - отменить текущую операцию
+- `/start` - the beginning of communication
+- `/help` - writes manual information
+- `/encrypt` - encrypt the text in the picture
+- `/decrypt` - decrypt text
+- `/cancel` - cancel current operation
